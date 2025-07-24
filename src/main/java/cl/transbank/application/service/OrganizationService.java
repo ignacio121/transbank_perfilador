@@ -1,5 +1,6 @@
 package cl.transbank.application.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -50,22 +51,38 @@ public class OrganizationService {
                 .block();
     }
 
-    public UserOfOrganizationResponse[] listOrganizationUsers(String organization) {
-        
+    public UserOfOrganizationResponse[] listOrganizationUsers(String organization, String search, Boolean blocked) {
         UserOfOrganizationResponse[] members = getMembers(organization);
-        if (members == null || members.length == 0) {
-            return new UserOfOrganizationResponse[0];
-        }
+        if (members == null || members.length == 0) return new UserOfOrganizationResponse[0];
 
-        for (UserOfOrganizationResponse member: members) {
+        List<UserOfOrganizationResponse> enriched = new ArrayList<>();
+
+        for (UserOfOrganizationResponse member : members) {
             UserResponse userDetails = userService.getUser(member.getUser_id());
             if (userDetails != null) {
                 member.setEmail(userDetails.getEmail());
                 member.setBlocked(userDetails.getBlocked());
                 member.setUsername(userDetails.getUsername());
+
+                boolean matchesText = (search == null || search.isBlank()) || (
+                        containsIgnoreCase(userDetails.getEmail(), search) ||
+                        containsIgnoreCase(userDetails.getName(), search) ||
+                        containsIgnoreCase(userDetails.getUsername(), search)
+                );
+
+                boolean matchesBlocked = (blocked == null || userDetails.getBlocked().equals(blocked));
+
+                if (matchesText && matchesBlocked) {
+                    enriched.add(member);
+                }
             }
         }
-        return members;
+
+        return enriched.toArray(new UserOfOrganizationResponse[0]);
+    }
+
+    private boolean containsIgnoreCase(String field, String search) {
+        return field != null && field.toLowerCase().contains(search.toLowerCase());
     }
 
     public UserOfOrganizationResponse[] getMembers(String organization) {

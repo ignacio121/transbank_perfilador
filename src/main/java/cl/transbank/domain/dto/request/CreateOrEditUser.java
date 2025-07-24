@@ -5,7 +5,7 @@ import java.util.Map;
 import lombok.Data;
 
 @Data
-public class CreateUser {
+public class CreateOrEditUser {
     private String connection;
     private String user_id;
     private String email;
@@ -14,7 +14,6 @@ public class CreateUser {
     private String given_name;
     private String family_name;
     private String name;
-    private String nickname;
     private String picture;
     private boolean blocked;
     private boolean emailVerified;

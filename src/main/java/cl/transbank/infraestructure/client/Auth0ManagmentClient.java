@@ -14,8 +14,8 @@ import java.util.Map;
 @Slf4j
 public class Auth0ManagmentClient {
 
-    @Value("${auth0.domain}")
-    private String domain;
+    @Value("${auth0.authorized}")
+    private String authorized;
 
     @Value("${auth0.client-id}")
     private String clientId;
@@ -42,7 +42,6 @@ public class Auth0ManagmentClient {
     }
 
     private void fetchNewToken() {
-        String tokenEndpoint = "https://" + domain + "/oauth/token";
 
         Map<String, String> body = new HashMap<>();
         body.put("grant_type", "client_credentials");
@@ -54,7 +53,7 @@ public class Auth0ManagmentClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(tokenEndpoint, HttpMethod.POST, request, Map.class);
+        ResponseEntity<Map> response = restTemplate.exchange(authorized, HttpMethod.POST, request, Map.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             this.token = (String) response.getBody().get("access_token");

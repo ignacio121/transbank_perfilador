@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import cl.transbank.application.service.UserService;
 import cl.transbank.domain.dto.request.BlockUserRequest;
-import cl.transbank.domain.dto.request.CreateUser;
+import cl.transbank.domain.dto.request.CreateOrEditUser;
 import cl.transbank.domain.dto.response.ApiResponse;
 import cl.transbank.domain.dto.response.OrganizationResponse;
 import cl.transbank.domain.dto.response.RoleResponse;
@@ -71,10 +71,22 @@ public class UserController {
     @PostMapping("")
     public ResponseEntity<ApiResponse> crearUsuario(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody CreateUser request) {
+            @RequestBody CreateOrEditUser request) {
         TokenPermissionValidator.requirePermission(jwt, "create:users");
         userService.createUser(request);
         return ResponseEntity.ok(new ApiResponse("Usuario creado con éxito"));
+    }
+
+    @PatchMapping("/{userId}")
+    public ResponseEntity<ApiResponse> editarUsuario(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") String userId,
+            @RequestBody CreateOrEditUser request) {
+
+        TokenPermissionValidator.requirePermission(jwt, "update:users");
+        userService.updateUser(userId, request);
+ 
+        return ResponseEntity.ok(new ApiResponse("Usuario editado con éxito"));
     }
 
     @PatchMapping("/{userId}/bloquear")

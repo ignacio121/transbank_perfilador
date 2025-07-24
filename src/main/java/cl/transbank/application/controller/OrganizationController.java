@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import cl.transbank.application.service.OrganizationService;
@@ -30,9 +31,15 @@ public class OrganizationController {
     }
 
     @GetMapping("/{id}/members")
-    public ResponseEntity<UserOfOrganizationResponse[]> getOrganizationMembers (@AuthenticationPrincipal Jwt jwt, @PathVariable("id") String id) {
+    public ResponseEntity<UserOfOrganizationResponse[]> getOrganizationMembers(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") String id,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "blocked", required = false) Boolean blocked
+    ) {
         TokenPermissionValidator.requirePermission(jwt, "read:organization_member");
 
-        return ResponseEntity.ok(organizationService.listOrganizationUsers(id));
+        UserOfOrganizationResponse[] result = organizationService.listOrganizationUsers(id, search, blocked);
+        return ResponseEntity.ok(result);
     }
 }

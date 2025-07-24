@@ -1,7 +1,7 @@
 package cl.transbank.application.service;
 
 import cl.transbank.domain.dto.request.BlockUserRequest;
-import cl.transbank.domain.dto.request.CreateUser;
+import cl.transbank.domain.dto.request.CreateOrEditUser;
 import cl.transbank.domain.dto.response.OrganizationResponse;
 import cl.transbank.domain.dto.response.RoleResponse;
 import cl.transbank.domain.dto.response.UserPage;
@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -155,7 +156,7 @@ public class UserService {
                 .block();
     }
 
-    public void createUser(CreateUser createUser) {
+    public void createUser(CreateOrEditUser createUser) {
         String token = auth0Client.getAccessToken();
 
         if (createUser.getPassword() == null || createUser.getPassword().isEmpty()) {
@@ -171,7 +172,6 @@ public class UserService {
         putIfNotNull(body, "given_name", createUser.getGiven_name());
         putIfNotNull(body, "family_name", createUser.getFamily_name());
         putIfNotNull(body, "name", createUser.getName());
-        putIfNotNull(body, "nickname", createUser.getNickname());
         putIfNotNull(body, "user_id", createUser.getUser_id());
         putIfNotNull(body, "username", createUser.getUsername());
         putIfNotNull(body, "password", createUser.getPassword());
@@ -203,8 +203,47 @@ public class UserService {
         }
     }
 
+    public void updateUser(String userId,CreateOrEditUser updateUser) {
+        String token = auth0Client.getAccessToken();
+
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("User ID is required for update.");
+        }
+
+        if (updateUser.getEmail() != null && !updateUser.getEmail().isBlank() &&
+            updateUser.getUsername() != null && !updateUser.getUsername().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo puedes el email o el rut, no los dos en simultáneo.");
+        }
+
+        Map<String, Object> body = new HashMap<>();
+        putIfNotEmpty(body, "email", updateUser.getEmail());
+        putIfNotEmpty(body, "given_name", updateUser.getGiven_name());
+        putIfNotEmpty(body, "family_name", updateUser.getFamily_name());
+        putIfNotEmpty(body, "name", updateUser.getName());
+        putIfNotEmpty(body, "username", updateUser.getUsername());
+
+        System.out.println("Updating user: " + userId + " with fields: " + body.keySet());
+
+        UserResponse updatedUser = buildClient(token)
+                .patch()
+                .uri("/users/{id}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(UserResponse.class)
+                .block();
+
+        System.out.println("User updated: " + updatedUser.getUserId());
+    }
+
     private void putIfNotNull(Map<String, Object> map, String key, Object value) {
         if (value != null) map.put(key, value);
+    }
+
+    private void putIfNotEmpty(Map<String, Object> map, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            map.put(key, value);
+        }
     }
 
 }
