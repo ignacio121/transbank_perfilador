@@ -27,6 +27,29 @@ public class OrganizationController {
     @GetMapping("")
     public ResponseEntity<List<OrganizationResponse>> obtenerOrganizaciones(@AuthenticationPrincipal Jwt jwt) {
         TokenPermissionValidator.requirePermission(jwt, "read:organizations");
+        return ResponseEntity.ok(organizationService.getAllOrganizations());
+    }
+
+    @GetMapping("/find")
+    public ResponseEntity<List<OrganizationResponse>> buscarOrganizaciones(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "name", required = true) String name) {
+        TokenPermissionValidator.requirePermission(jwt, "read:organizations");
+        return ResponseEntity.ok(organizationService.getOrganizationsByNameContains(name));
+    }
+
+    @GetMapping("/find/me")
+    public ResponseEntity<List<OrganizationResponse>> buscarOrganizacionesDeUsuario(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = true) String userId,
+            @RequestParam(name = "name", required = true) String name) {
+        TokenPermissionValidator.requirePermission(jwt, "read:organizations");
+        return ResponseEntity.ok(organizationService.getOrganizationsOfUserByName(userId, name));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<List<OrganizationResponse>> obtenerMisOrganizaciones(@AuthenticationPrincipal Jwt jwt) {
+        TokenPermissionValidator.requirePermission(jwt, "read:organizations");
         return ResponseEntity.ok(organizationService.organizationsOfUser(jwt.getSubject()));
     }
 

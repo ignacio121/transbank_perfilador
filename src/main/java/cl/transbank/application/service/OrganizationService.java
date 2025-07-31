@@ -1,8 +1,10 @@
 package cl.transbank.application.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +41,43 @@ public class OrganizationService {
                 .build();
     }
 
+    public List<OrganizationResponse> getOrganizationsByNameContains(String partialName) {
+        List<OrganizationResponse> allOrgs = getAllOrganizations();
+        return allOrgs.stream()
+                .filter(org -> org.getName() != null &&
+                        org.getName().toLowerCase().contains(partialName.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<OrganizationResponse> getAllOrganizations(){
+        String token = auth0Client.getAccessToken();
+
+        List<OrganizationResponse> all = new ArrayList<>();
+        int page = 0;
+        int perPage = 100;  
+        boolean more = true;
+
+        while (more) {
+            OrganizationResponse[] orgs = buildClient(token)
+                .get()
+                .uri("/organizations?page={page}&per_page={perPage}", page, perPage)
+                .retrieve()
+                .bodyToMono(OrganizationResponse[].class)
+                .block();
+
+            if (orgs != null) {
+                all.addAll(Arrays.asList(orgs));
+                more = orgs.length == perPage;
+            } else {
+                more = false;
+            }
+
+            page++;
+        }
+
+        return all;
+    }
+
     public List<OrganizationResponse> organizationsOfUser(String userId) {
         String token = auth0Client.getAccessToken();
 
@@ -49,6 +88,15 @@ public class OrganizationService {
                 .bodyToMono(OrganizationResponse[].class)
                 .map(List::of)
                 .block();
+    }
+
+    public List<OrganizationResponse> getOrganizationsOfUserByName(String userId, String partialName) {
+        List<OrganizationResponse> userOrgs = organizationsOfUser(userId);
+
+        return userOrgs.stream()
+                .filter(org -> org.getName() != null &&
+                        org.getName().toLowerCase().contains(partialName.toLowerCase()))
+                .collect(Collectors.toList());
     }
 
     public UserOfOrganizationResponse[] listOrganizationUsers(String organization, String search, Boolean blocked) {

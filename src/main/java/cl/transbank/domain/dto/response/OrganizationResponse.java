@@ -18,8 +18,8 @@ public class OrganizationResponse {
 
     @JsonProperty("metadata")
     public void setMetadata(Map<String, Object> metadata) {
-        if (metadata != null && metadata.containsKey("organization_type")) {
-            this.organization_type = String.valueOf(metadata.get("organization_type"));
+        if (metadata != null && metadata.containsKey("type")) {
+            this.organization_type = String.valueOf(metadata.get("type"));
         }
     }
 }

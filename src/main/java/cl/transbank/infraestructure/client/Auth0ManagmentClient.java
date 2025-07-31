@@ -42,7 +42,6 @@ public class Auth0ManagmentClient {
     }
 
     private void fetchNewToken() {
-
         Map<String, String> body = new HashMap<>();
         body.put("grant_type", "client_credentials");
         body.put("client_id", clientId);
