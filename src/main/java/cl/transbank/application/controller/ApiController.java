@@ -8,6 +8,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+
+import cl.transbank.infraestructure.client.Auth0ManagmentClient;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
@@ -16,8 +22,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api")
 public class ApiController {
+
+    @Autowired
+    private final Auth0ManagmentClient auth0Client; 
+
+    @GetMapping("/auth/access-token")
+    public ResponseEntity<String> getAccessToken() {
+        return ResponseEntity.ok(auth0Client.getAccessToken());
+    }
 
     @GetMapping("/debug")
     public Map<String, Object> debug(@AuthenticationPrincipal Jwt jwt) {

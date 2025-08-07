@@ -35,6 +35,7 @@ public class SecurityConfig {
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(ex -> ex.accessDeniedHandler(accessDeniedHandler))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/access-token").permitAll() // <-- Permite acceso público a este endpoint
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2

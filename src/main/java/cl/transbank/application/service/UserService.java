@@ -29,6 +29,9 @@ public class UserService {
     @Value("${auth0.audience}")
     private String auth0managmentApi;
 
+    @Value("${auth0.clientId}")
+    private String auth0ClientId;
+
     private final Auth0ManagmentClient auth0Client;
 
     @Autowired
@@ -40,6 +43,38 @@ public class UserService {
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .build();
+    }
+
+    public void resetPassword(String email, String connection) {
+        String token = auth0Client.getAccessToken();
+
+        Map<String, String> body = new HashMap<>();
+        body.put("email", email);
+        body.put("connection", connection);
+        body.put("client_id", auth0ClientId);
+
+        buildClient(token)
+                .post()
+                .uri("/dbconnections/change_password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public void addMFAtoUser (String userId){
+        String token = auth0Client.getAccessToken();
+
+        buildClient(token)
+                .patch()
+                .uri("/users/{user_id}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("app_metadata", Map.of("require_mfa", true)))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+
     }
 
     public UserResponse getUser(String userId) {
@@ -70,7 +105,7 @@ public class UserService {
         return user;
     }
 
-    public UserPage listarUsuarios(int page, int per_page) {
+    public UserPage listarUsuarios(int page, int per_page, String search, Boolean blocked) {
         String token = auth0Client.getAccessToken();
 
         return buildClient(token)
@@ -172,11 +207,10 @@ public class UserService {
         putIfNotNull(body, "given_name", createUser.getGiven_name());
         putIfNotNull(body, "family_name", createUser.getFamily_name());
         putIfNotNull(body, "name", createUser.getName());
-        putIfNotNull(body, "user_id", createUser.getUser_id());
+        putIfNotNull(body, "user_id", createUser.getUsername());
         putIfNotNull(body, "username", createUser.getUsername());
         putIfNotNull(body, "password", createUser.getPassword());
 
-        
         UserResponse createdUser = buildClient(token)
                 .post()
                 .uri("/users")
@@ -199,8 +233,13 @@ public class UserService {
         System.out.println("User created with ID: " + createdUser.getUserId() + ", Organization ID: " + organizationId);
 
         if (organizationId != null) {
-            organizationService.addUsersToOrganization(List.of(createdUser.getUserId()), organizationId);// 5 intentos, 1 segundo entre cada uno
+            organizationService.addUsersToOrganization(List.of(createdUser.getUserId()), organizationId);
         }
+
+        if (createUser.getRoles() != null && !createUser.getRoles().isEmpty()) {
+            organizationService.assignRolesToUserInOrganization(organizationId, createdUser.getUserId(), createUser.getRoles());
+        }
+        System.out.println("User roles" + createUser.getRoles());
     }
 
     public void updateUser(String userId,CreateOrEditUser updateUser) {
@@ -246,4 +285,27 @@ public class UserService {
         }
     }
 
+    public void deleteUser(String userId) {
+        String token = auth0Client.getAccessToken();
+
+        buildClient(token)
+                .delete()
+                .uri("/users/{user_id}", userId)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public void skipMfa(String userId) {
+        String token = auth0Client.getAccessToken();
+
+        buildClient(token)
+                .patch()
+                .uri("/users/{user_id}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("app_metadata", Map.of("skip_mfa", false)))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
 }

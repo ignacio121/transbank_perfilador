@@ -7,10 +7,12 @@ import org.springframework.http.ResponseEntity;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -46,9 +48,11 @@ public class UserController {
     public ResponseEntity<UserPage> obtenerUsuarios(
             @AuthenticationPrincipal Jwt jwt, 
             @RequestParam(name = "page", defaultValue = "0") int page, 
-            @RequestParam(name = "per_page", defaultValue = "10") int per_page) {
+            @RequestParam(name = "per_page", defaultValue = "10") int per_page,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "blocked", required = false) Boolean blocked) {
         TokenPermissionValidator.requirePermission(jwt, "read:users");
-        return ResponseEntity.ok(userService.listarUsuarios(page, per_page));
+        return ResponseEntity.ok(userService.listarUsuarios(page, per_page, search, blocked));
     }
 
     @GetMapping("/{userId}/organization/{organizationId}/roles")
@@ -99,5 +103,35 @@ public class UserController {
 
         userService.bloquearUsuario(userId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{userId}/enable-mfa")
+    public ResponseEntity<ApiResponse> enableMfa(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") String userId
+    ) {
+        TokenPermissionValidator.requirePermission(jwt, "update:users");
+        userService.addMFAtoUser(userId);
+        return ResponseEntity.ok(new ApiResponse("Usuario editado con éxito"));
+    }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteUser(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") String userId
+    ) {
+        TokenPermissionValidator.requirePermission(jwt, "delete:users");
+        userService.deleteUser(userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{userId}/skip-mfa")
+    public ResponseEntity<ApiResponse> skipMfa(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") String userId
+    ) {
+        TokenPermissionValidator.requirePermission(jwt, "read:users");
+        userService.skipMfa(userId);
+        return ResponseEntity.ok(new ApiResponse("saltado de mfa desabilitado"));
     }
 }

@@ -1,5 +1,6 @@
 package cl.transbank.domain.dto.request;
 
+import java.util.List;
 import java.util.Map;
 
 import lombok.Data;
@@ -21,4 +22,5 @@ public class CreateOrEditUser {
     private String organization_id;
     private Map<String, Object> userMetadata;
     private Map<String, Object> appMetadata;
+    private List<String> roles;
 }
